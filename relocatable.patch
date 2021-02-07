@@ -1,0 +1,75 @@
+diff --git a/src/libstore/globals.cc b/src/libstore/globals.cc
+index 1c2c0871..fc2df89f 100644
+--- a/src/libstore/globals.cc
++++ b/src/libstore/globals.cc
+@@ -26,6 +26,29 @@ namespace nix {
+     #define DEFAULT_ALLOWED_IMPURE_PREFIXES ""
+ #endif
+ 
++static const std::string SELF{canonPath(readLink("/proc/self/exe"))};
++
++#undef NIX_PREFIX
++#undef NIX_DATA_DIR
++#undef NIX_LIBEXEC_DIR
++#undef NIX_BIN_DIR
++#undef NIX_MAN_DIR
++#undef SANDBOX_SHELL
++
++static const std::string NIX_PREFIX{canonPath(dirOf(dirOf(SELF)))};
++static const std::string NIX_DATA_DIR{NIX_PREFIX + "/share"};
++static const std::string NIX_LIBEXEC_DIR{NIX_PREFIX + "/libexec"};
++static const std::string NIX_BIN_DIR{NIX_PREFIX + "/bin"};
++static const std::string NIX_MAN_DIR{NIX_PREFIX + "/share/man"};
++static const std::string SANDBOX_SHELL{NIX_PREFIX + "/libexec/nix/bash"};
++
++#define NIX_PREFIX (NIX_PREFIX)
++#define NIX_DATA_DIR (NIX_DATA_DIR)
++#define NIX_LIBEXEC_DIR (NIX_LIBEXEC_DIR)
++#define NIX_BIN_DIR (NIX_BIN_DIR)
++#define NIX_MAN_DIR (NIX_MAN_DIR)
++#define SANDBOX_SHELL (SANDBOX_SHELL)
++
+ Settings settings;
+ 
+ static GlobalConfig::Register r1(&settings);
+@@ -64,7 +94,7 @@ Settings::Settings()
+     }
+ 
+ #if defined(__linux__) && defined(SANDBOX_SHELL)
+-    sandboxPaths = tokenizeString<StringSet>("/bin/sh=" SANDBOX_SHELL);
++    sandboxPaths = tokenizeString<StringSet>("/bin/sh=" + std::string(SANDBOX_SHELL));
+ #endif
+ 
+     allowedImpureHostPrefixes = tokenizeString<StringSet>(DEFAULT_ALLOWED_IMPURE_PREFIXES);
+diff --git a/src/libutil/util.cc b/src/libutil/util.cc
+index e3dcd246..bf174d2d 100644
+--- a/src/libutil/util.cc
++++ b/src/libutil/util.cc
+@@ -37,5 +37,13 @@ extern char * * environ;
+ 
+ namespace nix {
++#undef NIX_PREFIX
++#undef NIX_LIBEXEC_DIR
++static const std::string SELF{canonPath(readLink("/proc/self/exe"))};
++static const std::string NIX_PREFIX{canonPath(dirOf(dirOf(SELF)))};
++static const std::string NIX_LIBEXEC_DIR{NIX_PREFIX + "/libexec"};
++#define NIX_PREFIX (NIX_PREFIX)
++#define NIX_LIBEXEC_DIR (NIX_LIBEXEC_DIR)
++
+ 
+ BaseError & BaseError::addPrefix(const FormatOrString & fs)
+ {
+@@ -1027,8 +1038,12 @@ void runProgram2(const RunOptions & options)
+ 
+         restoreSignals();
+ 
+-        if (options.searchPath)
++        if (options.searchPath){
++            auto unixPath = tokenizeString<Strings>(getEnv("PATH"),":");
++            unixPath.push_front(std::string(NIX_LIBEXEC_DIR) + "/nix");
++            setenv("PATH", concatStringsSep(":", unixPath).c_str(), 1);
+             execvp(options.program.c_str(), stringsToCharPtrs(args_).data());
++        }
+         else
+             execv(options.program.c_str(), stringsToCharPtrs(args_).data());
+ 

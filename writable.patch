@@ -1,0 +1,44 @@
+diff --git a/configure.ac b/configure.ac
+index f5b1614f..caee041d 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -69,6 +69,7 @@ AC_CHECK_TOOL([AR], [ar])
+ # Use 64-bit file system calls so that we can support files > 2 GiB.
+ AC_SYS_LARGEFILE
+ 
++AC_CHECK_TOOL([AR], [ar])
+ 
+ # Check for pubsetbuf.
+ AC_MSG_CHECKING([for pubsetbuf])
+@@ -277,6 +278,15 @@ else
+   AC_SUBST(BUILD_SHARED_LIBS, 0, [Whether to build shared libraries.])
+ fi
+ 
++AC_ARG_ENABLE(shared, AC_HELP_STRING([--enable-shared],
++  [Build shared libraries for Nix [default=yes]]),
++  shared=$enableval, shared=yes)
++if test "$shared" = yes; then
++  AC_SUBST(BUILD_SHARED_LIBS, 1, [Whether to build shared libraries.])
++else
++  AC_SUBST(BUILD_SHARED_LIBS, 0, [Whether to build shared libraries.])
++fi
++
+ 
+ # Expand all variables in config.status.
+ test "$prefix" = NONE && prefix=$ac_default_prefix
+diff --git a/src/libstore/local-store.cc b/src/libstore/local-store.cc
+index 485fdd69..99930691 100644
+--- a/src/libstore/local-store.cc
++++ b/src/libstore/local-store.cc
+@@ -386,9 +386,9 @@ static void canonicaliseTimestampAndPermissions(const Path & path, const struct
+         /* Mask out all type related bits. */
+         mode_t mode = st.st_mode & ~S_IFMT;
+ 
+-        if (mode != 0444 && mode != 0555) {
++        if (mode != 0644 && mode != 0755) {
+             mode = (st.st_mode & S_IFMT)
+-                 | 0444
++                 | 0644
+                  | (st.st_mode & S_IXUSR ? 0111 : 0);
+             if (chmod(path.c_str(), mode) == -1)
+                 throw SysError(format("changing mode of '%1%' to %2$o") % path % mode);
