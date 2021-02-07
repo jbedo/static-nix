@@ -1,10 +1,10 @@
 diff --git a/src/libstore/globals.cc b/src/libstore/globals.cc
-index 1c2c0871..fc2df89f 100644
+index 0531aad9f..3c4cbb1d9 100644
 --- a/src/libstore/globals.cc
 +++ b/src/libstore/globals.cc
-@@ -26,6 +26,29 @@ namespace nix {
-     #define DEFAULT_ALLOWED_IMPURE_PREFIXES ""
- #endif
+@@ -23,6 +23,29 @@ namespace nix {
+    must be deleted and recreated on startup.) */
+ #define DEFAULT_SOCKET_PATH "/daemon-socket/socket"
  
 +static const std::string SELF{canonPath(readLink("/proc/self/exe"))};
 +
@@ -31,8 +31,8 @@ index 1c2c0871..fc2df89f 100644
 +
  Settings settings;
  
- static GlobalConfig::Register r1(&settings);
-@@ -64,7 +94,7 @@ Settings::Settings()
+ static GlobalConfig::Register rSettings(&settings);
+@@ -63,7 +86,7 @@ Settings::Settings()
      }
  
  #if defined(__linux__) && defined(SANDBOX_SHELL)
@@ -40,12 +40,13 @@ index 1c2c0871..fc2df89f 100644
 +    sandboxPaths = tokenizeString<StringSet>("/bin/sh=" + std::string(SANDBOX_SHELL));
  #endif
  
-     allowedImpureHostPrefixes = tokenizeString<StringSet>(DEFAULT_ALLOWED_IMPURE_PREFIXES);
+ 
 diff --git a/src/libutil/util.cc b/src/libutil/util.cc
-index e3dcd246..bf174d2d 100644
+index 89f7b58f8..36e49e572 100644
 --- a/src/libutil/util.cc
 +++ b/src/libutil/util.cc
-@@ -37,5 +37,13 @@ extern char * * environ;
+@@ -39,6 +39,14 @@ extern char * * environ __attribute__((weak));
+ 
  
  namespace nix {
 +#undef NIX_PREFIX
@@ -57,18 +58,20 @@ index e3dcd246..bf174d2d 100644
 +#define NIX_LIBEXEC_DIR (NIX_LIBEXEC_DIR)
 +
  
- BaseError & BaseError::addPrefix(const FormatOrString & fs)
+ std::optional<std::string> getEnv(const std::string & key)
  {
-@@ -1027,8 +1038,12 @@ void runProgram2(const RunOptions & options)
+@@ -1111,10 +1119,14 @@ void runProgram2(const RunOptions & options)
  
          restoreSignals();
  
 -        if (options.searchPath)
 +        if (options.searchPath){
-+            auto unixPath = tokenizeString<Strings>(getEnv("PATH"),":");
++            auto unixPath = tokenizeString<Strings>(getEnv("PATH").value_or(""),":");
 +            unixPath.push_front(std::string(NIX_LIBEXEC_DIR) + "/nix");
 +            setenv("PATH", concatStringsSep(":", unixPath).c_str(), 1);
              execvp(options.program.c_str(), stringsToCharPtrs(args_).data());
+             // This allows you to refer to a program with a pathname relative
+             // to the PATH variable.
 +        }
          else
              execv(options.program.c_str(), stringsToCharPtrs(args_).data());
