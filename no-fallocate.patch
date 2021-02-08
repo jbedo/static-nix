@@ -1,8 +1,8 @@
 diff --git a/src/libstore/local-store.cc b/src/libstore/local-store.cc
-index 485fdd69..5cba60ab 100644
+index f45af2bac..74ed13094 100644
 --- a/src/libstore/local-store.cc
 +++ b/src/libstore/local-store.cc
-@@ -126,7 +126,7 @@ LocalStore::LocalStore(const Params & params)
+@@ -191,7 +191,7 @@ LocalStore::LocalStore(const Params & params)
          {
              AutoCloseFD fd = open(reservedPath.c_str(), O_WRONLY | O_CREAT | O_CLOEXEC, 0600);
              int res = -1;
@@ -12,13 +12,13 @@ index 485fdd69..5cba60ab 100644
  #endif
              if (res == -1) {
 diff --git a/src/libutil/archive.cc b/src/libutil/archive.cc
-index 3aa12027..35e1217d 100644
+index ed0eb2fb5..73b33c848 100644
 --- a/src/libutil/archive.cc
 +++ b/src/libutil/archive.cc
-@@ -324,7 +324,7 @@ struct RestoreSink : ParseSink
+@@ -328,7 +328,7 @@ struct RestoreSink : ParseSink
+         if (!archiveSettings.preallocateContents)
+             return;
  
-     void preallocateContents(unsigned long long len)
-     {
 -#if HAVE_POSIX_FALLOCATE
 +#if 0
          if (len) {
