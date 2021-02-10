@@ -1,0 +1,13 @@
+diff --git a/src/libstore/globals.cc b/src/libstore/globals.cc
+index 0531aad9f..2d61c8d12 100644
+--- a/src/libstore/globals.cc
++++ b/src/libstore/globals.cc
+@@ -46,7 +46,7 @@ Settings::Settings()
+ 
+     caFile = getEnv("NIX_SSL_CERT_FILE").value_or(getEnv("SSL_CERT_FILE").value_or(""));
+     if (caFile == "") {
+-        for (auto & fn : {"/etc/ssl/certs/ca-certificates.crt", "/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt"})
++        for (auto & fn : {"/etc/ssl/certs/ca-bundle.crt", "/etc/ssl/certs/ca-certificates.crt", "/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt"})
+             if (pathExists(fn)) {
+                 caFile = fn;
+                 break;
