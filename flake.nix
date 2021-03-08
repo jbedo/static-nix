@@ -7,7 +7,7 @@
       defaultPackage = let
         pkgs = import nixpkgs { inherit system; };
         patchedNix = nix.packages."${system}".nix-static.overrideAttrs (_: {
-          patches = [ ./ca-cert-path.patch ./experimental-features.patch ./relocatable.patch ./no-fallocate.patch ./lustre.patch ./no-wal.patch ];
+          patches = [ ./ca-cert-path.patch ./experimental-features.patch ./relocatable.patch ./no-fallocate.patch ./ignxattr.patch ./no-wal.patch ];
           doCheck = false;
         });
       in pkgs.runCommand "build-package" {} ''
