@@ -21,6 +21,8 @@
             TMPDIR = "/vast/scratch/users/bedo.j/slurm-test/tmp";
             STOREROOT = "/vast/scratch/users/bedo.j/slurm-test";
             SLURMPREFIX = "/usr/bin/";
+            useProot = false;
+
             SRUN = "${SLURMPREFIX}/srun";
             SALLOC = "${SLURMPREFIX}/salloc";
 
@@ -40,6 +42,8 @@
               #!/bin/sh
               SCRIPT_DIR="$( cd -- "$( dirname -- "$0" )" &> /dev/null && pwd -P)"
               LIBEXEC="$SCRIPT_DIR/../libexec/nix"
+              mkdir -p ${TMPDIR}
+              mkdir -p ${STOREROOT}/nix
               exec $LIBEXEC/nix-user-chroot "${STOREROOT}/nix" $LIBEXEC/bash -c 'exec ./bin/$SSH_ORIGINAL_COMMAND'
             '';
 
@@ -50,19 +54,39 @@
               exec $LIBEXEC/nix-user-chroot "${STOREROOT}/nix" $SCRIPT_DIR/nix "$@"
             '';
 
+            proot-wrapper = pkgs.writeScript "proot-wrapper" ''
+              #!/bin/sh
+              SCRIPT_DIR="$( cd -- "$( dirname -- "$0" )" &> /dev/null && pwd -P)"
+              ROOT="$1"
+              shift
+              exec $SCRIPT_DIR/proot -b "$ROOT":/nix/ "$@"
+            '';
+
+            proot = pkgs.fetchurl {
+              url = "https://github.com/proot-me/proot/releases/download/v5.2.0/proot-v5.2.0-x86_64-static";
+              sha256 = "sha256-6wZDs8SnfGsoe8Ev0WrXqUhs0vPE72Oh7oyn74pK4vA=";
+            };
+
             bundler = what:
               pkgs.runCommand "build-bundle" { } ''
-                  ${pkgs.haskellPackages.arx}/bin/arx tmpx --tmpdir "${STOREROOT}" ${slurm} // ./bin/${what} > $out
+                  ${pkgs.haskellPackages.arx}/bin/arx tmpx --tmpdir "${STOREROOT}" ${tarball} // ./bin/${what} > $out
                 chmod 755 $out
               '';
 
-            slurm =
+            tarball =
               pkgs.runCommand "slurm-nix.tar.bz2" { } ''
                 install -Dm 755 ${slurmNix}/bin/nix out/bin/nix
                 install -Dm 755 ${pkgs.pkgsStatic.bash}/bin/bash out/libexec/nix/bash
-                install -Dm 755 ${nix-user-chroot} out/libexec/nix/nix-user-chroot
                 install -Dm 755 ${ssh-wrapper} out/bin/ssh-wrapper
                 install -Dm 755 ${nix-wrapper} out/bin/nix-wrapper
+                
+                ${if useProot then ''
+                  install -Dm 755 ${proot} out/libexec/nix/proot
+                  install -Dm 755 ${proot-wrapper} out/libexec/nix/nix-user-chroot
+                '' else ''
+                  install -Dm 755 ${nix-user-chroot} out/libexec/nix/nix-user-chroot
+                ''}
+                
                 
                 for cmd in build channel collect-garbage copy-closure daemon env hash instantitate prefetch-url shell store ; do
                   ln -s ./nix out/bin/nix-$cmd
@@ -73,7 +97,7 @@
 
           in
           {
-            inherit slurm;
+            slurm = tarball;
             slurm-ssh-wrapper-bundle = bundler "ssh-wrapper";
             slurm-nix-wrapper-bundle = bundler "nix-wrapper";
           };
