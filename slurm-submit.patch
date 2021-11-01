@@ -1,5 +1,5 @@
 diff --git a/src/libstore/build/local-derivation-goal.cc b/src/libstore/build/local-derivation-goal.cc
-index 2182f0bb4..dfe8f2c18 100644
+index 2182f0bb4..fc5a0fb21 100644
 --- a/src/libstore/build/local-derivation-goal.cc
 +++ b/src/libstore/build/local-derivation-goal.cc
 @@ -59,6 +59,14 @@
@@ -31,7 +31,7 @@ index 2182f0bb4..dfe8f2c18 100644
  
          assert(pid == -1);
      }
-@@ -2022,7 +2034,26 @@ void LocalDerivationGoal::runChild()
+@@ -2022,7 +2034,27 @@ void LocalDerivationGoal::runChild()
  
          posix_spawn(NULL, builder.c_str(), NULL, &attrp, stringsToCharPtrs(args).data(), stringsToCharPtrs(envStrs).data());
  #else
@@ -43,9 +43,10 @@ index 2182f0bb4..dfe8f2c18 100644
 +        args.push_front("@STOREROOT@/nix");
 +        args.push_front(NIX_LIBEXEC_DIR + "/nix-user-chroot");
 +        args.push_front("@SRUN@");
-+        if(env.count("PPN"))
++        if(env.count("PPN")) {
 +          args.push_front(env["PPN"]);
-+        else
++          envStrs.push_back("NIX_BUILD_CORES=" + env["PPN"]);
++        } else
 +          args.push_front(std::to_string(settings.buildCores));
 +        args.push_front("-c");
 +        if(env.count("MEMORY"))
