@@ -1,0 +1,53 @@
+diff --git a/src/libstore/build/local-derivation-goal.cc b/src/libstore/build/local-derivation-goal.cc
+index 2182f0bb4..4695be20d 100644
+--- a/src/libstore/build/local-derivation-goal.cc
++++ b/src/libstore/build/local-derivation-goal.cc
+@@ -59,6 +59,14 @@
+ 
+ namespace nix {
+ 
++#undef NIX_PREFIX
++#undef NIX_LIBEXEC_DIR
++static const std::string SELF{canonPath(readLink("/proc/self/exe"))};
++static const std::string NIX_PREFIX{canonPath(dirOf(dirOf(SELF)))};
++static const std::string NIX_LIBEXEC_DIR{NIX_PREFIX + "/libexec"};
++#define NIX_PREFIX (NIX_PREFIX)
++#define NIX_LIBEXEC_DIR (NIX_LIBEXEC_DIR)
++
+ void handleDiffHook(
+     uid_t uid, uid_t gid,
+     const Path & tryA, const Path & tryB,
+@@ -139,8 +147,10 @@ void LocalDerivationGoal::killChild()
+             ::kill(-pid, SIGKILL); /* ignore the result */
+             buildUser->kill();
+             pid.wait();
+-        } else
++        } else {
++            pid.setKillSignal(SIGTERM);
+             pid.kill();
++        }
+ 
+         assert(pid == -1);
+     }
+@@ -2022,7 +2032,20 @@ void LocalDerivationGoal::runChild()
+ 
+         posix_spawn(NULL, builder.c_str(), NULL, &attrp, stringsToCharPtrs(args).data(), stringsToCharPtrs(envStrs).data());
+ #else
+-        execve(builder.c_str(), stringsToCharPtrs(args).data(), stringsToCharPtrs(envStrs).data());
++
++        // Configure for nix-user-chroot slurm submission building
++        args.pop_front();
++        args.push_front(builder);
++        args.push_front("/vast/scratch/users/bedo.j/slurm-test/nix");
++        args.push_front(NIX_LIBEXEC_DIR + "/nix-user-chroot");
++        args.push_front("/usr/bin/srun");
++        args.push_front("10");
++        args.push_front("-c");
++        args.push_front(env["name"]);
++        args.push_front("-J");
++        args.push_front("salloc");
++        envStrs.push_back("NIX_BUILD_CORES=10");
++        execve("/usr/bin/salloc", stringsToCharPtrs(args).data(), stringsToCharPtrs(envStrs).data());
+ #endif
+ 
+         throw SysError("executing '%1%'", drv->builder);

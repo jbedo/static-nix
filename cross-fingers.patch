@@ -1,11 +1,12 @@
 diff --git a/src/libstore/build/local-derivation-goal.cc b/src/libstore/build/local-derivation-goal.cc
-index 990ff60b7..fde412821 100644
+index 06d0517a2..a30c75744 100644
 --- a/src/libstore/build/local-derivation-goal.cc
 +++ b/src/libstore/build/local-derivation-goal.cc
-@@ -2228,13 +2228,38 @@ void LocalDerivationGoal::registerOutputs()
+@@ -2222,14 +2222,39 @@ void LocalDerivationGoal::registerOutputs()
+             /* Apply hash rewriting if necessary. */
              if (!outputRewrites.empty()) {
-                 warn("rewriting hashes in '%1%'; cross fingers", actualPath);
- 
+                 debug("rewriting hashes in '%1%'; cross fingers", actualPath);
+-
 -                /* FIXME: this is in-memory. */
 -                StringSink sink;
 -                dumpPath(actualPath, sink);
@@ -13,8 +14,9 @@ index 990ff60b7..fde412821 100644
 -                sink.s = make_ref<std::string>(rewriteStrings(*sink.s, outputRewrites));
 -                StringSource source(*sink.s);
 -                restorePath(actualPath, source);
++                
 +                AutoDelete tmpDir(createTempDir(), true);
-+                Path tmpFile = (Path) tmpDir = "/rewrite";
++                Path tmpFile = (Path) tmpDir + "/rewrite";
 +                {
 +                  AutoCloseFD fd = open(tmpFile.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0600);
 +                  if(!fd) throw SysError("creating temporary file '%s'", tmpFile);
@@ -22,12 +24,12 @@ index 990ff60b7..fde412821 100644
 +                  dumpPath(actualPath, sink);
 +                  deletePath(actualPath);
 +                }
-+
++                
 +                {
 +                  AutoCloseFD fd = open(tmpFile.c_str(), O_RDWR);
 +                  if(!fd) throw SysError("Opening temporary file '%s'", tmpFile);
 +                  struct stat stat_buf;
-+                  if(!fstat(fd.get(), &stat_buf)) throw SysError("fstat: '%s'", tmpFile);
++                  if(fstat(fd.get(), &stat_buf) == -1) throw SysError("fstat: '%s'", tmpFile);
 +                  void *ptr = mmap(NULL, stat_buf.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd.get(), 0);
 +                  if(!ptr) throw SysError("mmap: '%s'", tmpFile);
 +                  for(auto & i : outputRewrites) {
@@ -38,7 +40,7 @@ index 990ff60b7..fde412821 100644
 +                  }
 +                  munmap(ptr, stat_buf.st_size);
 +                }
-+
++                
 +                {
 +                  AutoCloseFD fd = open(tmpFile.c_str(), O_RDONLY);
 +                  if(!fd) throw SysError("Opening temporary file '%s'", tmpFile);
