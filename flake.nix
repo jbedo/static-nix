@@ -79,6 +79,7 @@
                 install -Dm 755 ${pkgs.pkgsStatic.bash}/bin/bash out/libexec/nix/bash
                 install -Dm 755 ${ssh-wrapper} out/bin/ssh-wrapper
                 install -Dm 755 ${nix-wrapper} out/bin/nix-wrapper
+                ln -s ../../bin/nix out/libexec/nix/build-remote
                 
                 ${if useProot then ''
                   install -Dm 755 ${proot} out/libexec/nix/proot
