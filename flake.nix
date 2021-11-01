@@ -42,6 +42,7 @@
               #!/bin/sh
               SCRIPT_DIR="$( cd -- "$( dirname -- "$0" )" &> /dev/null && pwd -P)"
               LIBEXEC="$SCRIPT_DIR/../libexec/nix"
+              export TMPDIR=${TMPDIR}
               mkdir -p ${TMPDIR}
               mkdir -p ${STOREROOT}/nix
               exec $LIBEXEC/nix-user-chroot "${STOREROOT}/nix" $LIBEXEC/bash -c 'exec ./bin/$SSH_ORIGINAL_COMMAND'
@@ -51,6 +52,7 @@
               #!/bin/sh
               SCRIPT_DIR="$( cd -- "$( dirname -- "$0" )" &> /dev/null && pwd -P)"
               LIBEXEC="$SCRIPT_DIR/../libexec/nix"
+              export TMPDIR=${TMPDIR}
               exec $LIBEXEC/nix-user-chroot "${STOREROOT}/nix" $SCRIPT_DIR/nix "$@"
             '';
 
