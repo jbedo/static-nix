@@ -15,9 +15,11 @@
         packages =
           let
             # Location of temporary files (e.g., build directories)
+            # Must be shared with build nodes
             TMPDIR = "/vast/scratch/users/bedo.j/slurm-test/tmp";
 
-            # Location of nix stire
+            # Location of nix store
+            # Must be shared with build nodes
             STOREROOT = "/vast/scratch/users/bedo.j/slurm-test";
 
             # Location of srun & sallocate binaries on the HPC system
