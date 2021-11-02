@@ -14,9 +14,16 @@
       {
         packages =
           let
+            # Location of temporary files (e.g., build directories)
             TMPDIR = "/vast/scratch/users/bedo.j/slurm-test/tmp";
+
+            # Location of nix stire
             STOREROOT = "/vast/scratch/users/bedo.j/slurm-test";
+
+            # Location of srun & sallocate binaries on the HPC system
             SLURMPREFIX = "/usr/bin/";
+
+            # Use proot instead of bubblewrap
             useProot = false;
 
             SRUN = "${SLURMPREFIX}/srun";
