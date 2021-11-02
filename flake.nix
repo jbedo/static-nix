@@ -32,6 +32,9 @@
 
             makeWrapper = name: script: pkgs.writeScript name ''
               #!/bin/sh
+              set -e
+              set -o pipefail
+              
               function dirof {
                 SRC="$1"
                 BASE=''${SRC##*/}
@@ -42,8 +45,9 @@
               dirof "$SCRIPT_DIR"
               LIBEXEC="''${DIR}libexec/nix"
               export TMPDIR=${TMPDIR}
-              mkdir -p ${TMPDIR}
-              mkdir -p ${STOREROOT}/nix
+              command -v mkdir &> /dev/null && mkdir -p ${TMPDIR}
+              command -v mkdir &> /dev/null && mkdir -p ${STOREROOT}/nix
+              
               ${script}
             '';
 
