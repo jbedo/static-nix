@@ -1,0 +1,52 @@
+diff --git a/src/libstore/build/local-derivation-goal.cc b/src/libstore/build/local-derivation-goal.cc
+index f4342011f..eedd7e3d2 100644
+--- a/src/libstore/build/local-derivation-goal.cc
++++ b/src/libstore/build/local-derivation-goal.cc
+@@ -2308,17 +2308,36 @@ void LocalDerivationGoal::registerOutputs()
+                     refs.first);
+             if (scratchPath != finalPath) {
+                 // Also rewrite the output path
+-                auto source = sinkToSource([&](Sink & nextSink) {
+-                    StringSink sink;
+-                    dumpPath(actualPath, sink);
+-                    RewritingSink rsink2(oldHashPart, std::string(finalPath.hashPart()), nextSink);
+-                    rsink2(*sink.s);
+-                    rsink2.flush();
+-                });
+-                Path tmpPath = actualPath + ".tmp";
+-                restorePath(tmpPath, *source);
+-                deletePath(actualPath);
+-                movePath(tmpPath, actualPath);
++                AutoDelete tmpDir(createTempDir(), true);
++                Path tmpFile = (Path) tmpDir + "/rewrite";
++                {
++                  AutoCloseFD fd = open(tmpFile.c_str(), O_WRONLY | O_CREAT | O_EXCL, 0600);
++                  if(!fd) throw SysError("creating temporary file '%s'", tmpFile);
++                  FdSink sink(fd.get());
++                  dumpPath(actualPath, sink);
++                  deletePath(actualPath);
++                }
++                
++                {
++                  auto newHashPart = std::string(finalPath.hashPart());
++                  AutoCloseFD fd = open(tmpFile.c_str(), O_RDWR);
++                  if(!fd) throw SysError("Opening temporary file '%s'", tmpFile);
++                  struct stat stat_buf;
++                  if(fstat(fd.get(), &stat_buf) == -1) throw SysError("fstat: '%s'", tmpFile);
++                  void *ptr = mmap(NULL, stat_buf.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd.get(), 0);
++                  if(!ptr) throw SysError("mmap: '%s'", tmpFile);
++                  void *j;
++                  while((j = memmem(ptr, stat_buf.st_size, oldHashPart.c_str(), oldHashPart.size())))
++                    memcpy(j, newHashPart.c_str(), newHashPart.size());
++                  munmap(ptr, stat_buf.st_size);
++                }
++                
++                {
++                  AutoCloseFD fd = open(tmpFile.c_str(), O_RDONLY);
++                  if(!fd) throw SysError("Opening temporary file '%s'", tmpFile);
++                  FdSource source(fd.get());
++                  restorePath(actualPath, source);
++                }
+             }
+ 
+             HashResult narHashAndSize = hashPath(htSHA256, actualPath);

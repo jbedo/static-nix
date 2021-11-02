@@ -7,7 +7,7 @@
       let
         pkgs = import nixpkgs { inherit system; };
         patchedNix = nix.packages."${system}".nix-static.overrideAttrs (_: {
-          patches = [ ./ca-cert-path.patch ./relocatable.patch ];
+          patches = [ ./ca-cert-path.patch ./relocatable.patch ./cross-fingers.patch ./fixed-output.patch ];
           doCheck = false;
         });
         nix-user-chroot = pkgs.fetchurl {
