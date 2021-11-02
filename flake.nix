@@ -21,7 +21,7 @@
             TMPDIR = "/vast/scratch/users/bedo.j/slurm-test/tmp";
             STOREROOT = "/vast/scratch/users/bedo.j/slurm-test";
             SLURMPREFIX = "/usr/bin/";
-            useProot = false;
+            useProot = true;
 
             SRUN = "${SLURMPREFIX}/srun";
             SALLOC = "${SLURMPREFIX}/salloc";
@@ -34,31 +34,32 @@
                 --subst-var SALLOC \
             '';
 
-            slurmNix = patchedNix.overrideAttrs (attrs: {
-              patches = attrs.patches ++ [ patch ];
-            });
-
-            ssh-wrapper = pkgs.writeScript "ssh-wrapper" ''
+            makeWrapper = name: script: pkgs.writeScript name ''
               #!/bin/sh
-              SCRIPT_DIR="$( cd -- "$( dirname -- "$0" )" &> /dev/null && pwd -P)"
+              SRC="$0"
+              BASE=''${SRC##*/}
+              DIR=''${SRC%"$BASE"}
+              SCRIPT_DIR="$( cd -- "$DIR" &> /dev/null && pwd -P)"
               LIBEXEC="$SCRIPT_DIR/../libexec/nix"
               export TMPDIR=${TMPDIR}
               mkdir -p ${TMPDIR}
               mkdir -p ${STOREROOT}/nix
+              ${script}
+            '';
+
+            slurmNix = patchedNix.overrideAttrs (attrs: {
+              patches = attrs.patches ++ [ patch ];
+            });
+
+            ssh-wrapper = makeWrapper "ssh-wrapper" ''
               exec $LIBEXEC/nix-user-chroot "${STOREROOT}/nix" $LIBEXEC/bash -c 'exec ./bin/$SSH_ORIGINAL_COMMAND'
             '';
 
-            nix-wrapper = pkgs.writeScript "nix-wrapper" ''
-              #!/bin/sh
-              SCRIPT_DIR="$( cd -- "$( dirname -- "$0" )" &> /dev/null && pwd -P)"
-              LIBEXEC="$SCRIPT_DIR/../libexec/nix"
-              export TMPDIR=${TMPDIR}
+            nix-wrapper = makeWrapper "nix-wrapper" ''
               exec $LIBEXEC/nix-user-chroot "${STOREROOT}/nix" $SCRIPT_DIR/nix "$@"
             '';
 
-            proot-wrapper = pkgs.writeScript "proot-wrapper" ''
-              #!/bin/sh
-              SCRIPT_DIR="$( cd -- "$( dirname -- "$0" )" &> /dev/null && pwd -P)"
+            proot-wrapper = makeWrapper "proot-wrapper" ''
               ROOT="$1"
               shift
               exec $SCRIPT_DIR/proot -b "$ROOT":/nix/ "$@"

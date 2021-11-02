@@ -1,5 +1,5 @@
 diff --git a/src/libstore/build/local-derivation-goal.cc b/src/libstore/build/local-derivation-goal.cc
-index 2182f0bb4..fc5a0fb21 100644
+index 2182f0bb4..db80c9391 100644
 --- a/src/libstore/build/local-derivation-goal.cc
 +++ b/src/libstore/build/local-derivation-goal.cc
 @@ -59,6 +59,14 @@
@@ -31,6 +31,15 @@ index 2182f0bb4..fc5a0fb21 100644
  
          assert(pid == -1);
      }
+@@ -377,7 +389,7 @@ void LocalDerivationGoal::startBuilder()
+ 
+     /* Are we doing a chroot build? */
+     {
+-        auto noChroot = parsedDrv->getBoolAttr("__noChroot");
++        auto noChroot = true;
+         if (settings.sandboxMode == smEnabled) {
+             if (noChroot)
+                 throw Error("derivation '%s' has '__noChroot' set, "
 @@ -2022,7 +2034,27 @@ void LocalDerivationGoal::runChild()
  
          posix_spawn(NULL, builder.c_str(), NULL, &attrp, stringsToCharPtrs(args).data(), stringsToCharPtrs(envStrs).data());
