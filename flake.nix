@@ -10,10 +10,6 @@
           patches = [ ./ca-cert-path.patch ./relocatable.patch ./cross-fingers.patch ./fixed-output.patch ];
           doCheck = false;
         });
-        nix-user-chroot = pkgs.fetchurl {
-          url = "https://github.com/nix-community/nix-user-chroot/releases/download/1.2.2/nix-user-chroot-bin-1.2.2-x86_64-unknown-linux-musl";
-          sha256 = "sha256-4Rr/YEu40//R2cDGjNY2gW1+uNpUDeGO46QcytesCXI=";
-        };
       in
       {
         packages =
@@ -21,7 +17,7 @@
             TMPDIR = "/vast/scratch/users/bedo.j/slurm-test/tmp";
             STOREROOT = "/vast/scratch/users/bedo.j/slurm-test";
             SLURMPREFIX = "/usr/bin/";
-            useProot = true;
+            useProot = false;
 
             SRUN = "${SLURMPREFIX}/srun";
             SALLOC = "${SLURMPREFIX}/salloc";
@@ -36,11 +32,15 @@
 
             makeWrapper = name: script: pkgs.writeScript name ''
               #!/bin/sh
-              SRC="$0"
-              BASE=''${SRC##*/}
-              DIR=''${SRC%"$BASE"}
+              function dirof {
+                SRC="$1"
+                BASE=''${SRC##*/}
+                DIR=''${SRC%"$BASE"}
+              }
+              dirof "$0"
               SCRIPT_DIR="$( cd -- "$DIR" &> /dev/null && pwd -P)"
-              LIBEXEC="$SCRIPT_DIR/../libexec/nix"
+              dirof "$SCRIPT_DIR"
+              LIBEXEC="''${DIR}libexec/nix"
               export TMPDIR=${TMPDIR}
               mkdir -p ${TMPDIR}
               mkdir -p ${STOREROOT}/nix
@@ -63,6 +63,18 @@
               ROOT="$1"
               shift
               exec $SCRIPT_DIR/proot -b "$ROOT":/nix/ "$@"
+            '';
+
+            bwrap-wrapper = makeWrapper "bwrap-wrapper" ''
+              ROOT="$1"
+              shift
+              rootArgs=""
+              for path in /* ; do
+                if [ "$path" != "/nix" ] && [ "$path" != "/dev" ] ; then
+                  rootArgs="$rootArgs --bind $path $path"
+                fi
+              done
+              exec $SCRIPT_DIR/bwrap --bind "$ROOT" /nix/ $rootArgs --dev-bind /dev /dev "$@"
             '';
 
             proot = pkgs.fetchurl {
@@ -88,7 +100,8 @@
                   install -Dm 755 ${proot} out/libexec/nix/proot
                   install -Dm 755 ${proot-wrapper} out/libexec/nix/nix-user-chroot
                 '' else ''
-                  install -Dm 755 ${nix-user-chroot} out/libexec/nix/nix-user-chroot
+                  install -Dm 755 ${pkgs.pkgsStatic.bubblewrap}/bin/bwrap out/libexec/nix/bwrap
+                  install -Dm 755 ${bwrap-wrapper} out/libexec/nix/nix-user-chroot
                 ''}
                 
                 
