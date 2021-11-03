@@ -64,3 +64,18 @@ stdenv.mkDerivation {
   WALLTIME = "24:00:00"; # 1 day max walltime
 }
 ```
+
+## Use with BioNix
+
+BioNix can be used with this experimental SLURM patche by passing the
+resource requirements down through an overlay:
+
+```
+(_: super: {
+  exec = f: x@{ ppn ? 1, mem ? 1, walltime ? "2:00:00", ... }: y: (f x y).overrideAttrs (attrs: {
+    PPN = if attrs.passthru.multicore or false then ppn else 1;
+    MEMORY = toString mem + "G";
+    WALLTIME = walltime;
+  });
+})
+```
