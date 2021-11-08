@@ -97,7 +97,7 @@
 
             bundler = what:
               pkgs.runCommand "build-bundle" { } ''
-                  ${pkgs.haskellPackages.arx}/bin/arx tmpx --tmpdir "${STOREROOT}" ${tarball} // ./bin/${what} > $out
+                ${pkgs.haskellPackages.arx}/bin/arx tmpx --tmpdir "${STOREROOT}" ${tarball} // ./bin/${what} '$@' > $out
                 chmod 755 $out
               '';
 
