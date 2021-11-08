@@ -14,16 +14,16 @@
       {
         packages =
           let
-            # Location of temporary files (e.g., build directories)
-            # Must be shared with build nodes
-            TMPDIR = "/vast/scratch/users/bedo.j/slurm-test/tmp";
+            # Location of srun & sallocate binaries on the HPC system
+            SLURMPREFIX = "/usr/bin/";
 
             # Location of nix store
             # Must be shared with build nodes
-            STOREROOT = "/vast/scratch/users/bedo.j/slurm-test";
+            STOREROOT = "/vast/scratch/users/$USER/slurm-test";
 
-            # Location of srun & sallocate binaries on the HPC system
-            SLURMPREFIX = "/usr/bin/";
+            # Location of temporary files (e.g., build directories)
+            # Must be shared with build nodes
+            TMPDIR = "${STOREROOT}/tmp";
 
             # Use proot instead of bubblewrap
             useProot = false;
@@ -31,19 +31,11 @@
             SRUN = "${SLURMPREFIX}/srun";
             SALLOC = "${SLURMPREFIX}/salloc";
 
-            patch = pkgs.runCommand "patch-patch.patch"
-              { inherit STOREROOT SRUN SALLOC; } ''
-              substitute ${./slurm-submit.patch} $out \
-                --subst-var STOREROOT \
-                --subst-var SRUN \
-                --subst-var SALLOC \
-            '';
-
             makeWrapper = name: script: pkgs.writeScript name ''
               #!/bin/sh
               set -e
               set -o pipefail
-              
+
               function dirof {
                 SRC="$1"
                 BASE=''${SRC##*/}
@@ -53,27 +45,38 @@
               SCRIPT_DIR="$( cd -- "$DIR" &> /dev/null && pwd -P)"
               dirof "$SCRIPT_DIR"
               LIBEXEC="''${DIR}libexec/nix"
-              export TMPDIR=${TMPDIR}
-              command -v mkdir &> /dev/null && mkdir -p ${TMPDIR}
-              command -v mkdir &> /dev/null && mkdir -p ${STOREROOT}/nix
-              
+              export TMPDIR="${TMPDIR}"
+              export NIX_STOREROOT="${STOREROOT}"
+              export NIX_SRUN="${SRUN}"
+              export NIX_SALLOC="${SALLOC}"
+              command -v mkdir &> /dev/null && mkdir -p "$TMPDIR"
+              command -v mkdir &> /dev/null && mkdir -p "$NIX_STOREROOT"/nix
+
               ${script}
             '';
 
             slurmNix = patchedNix.overrideAttrs (attrs: {
-              patches = attrs.patches ++ [ patch ];
+              patches = attrs.patches ++ [ ./slurm-submit.patch ];
             });
 
+            arx' = pkgs.haskellPackages.arx.overrideAttrs
+              (_: {
+                preConfigure = ''
+                  substituteInPlace model-scripts/tmpx.sh \
+                    --replace 'cmd go "$@"' 'go "$@"'
+                '';
+              });
+
             ssh-wrapper = makeWrapper "ssh-wrapper" ''
-              exec $LIBEXEC/nix-user-chroot "${STOREROOT}/nix" $LIBEXEC/bash -c 'exec ./bin/$SSH_ORIGINAL_COMMAND'
+              exec $LIBEXEC/nix-user-chroot "$NIX_STOREROOT/nix" $LIBEXEC/bash - c 'exec ./bin/$SSH_ORIGINAL_COMMAND'
             '';
 
             nix-wrapper = makeWrapper "nix-wrapper" ''
-              exec $LIBEXEC/nix-user-chroot "${STOREROOT}/nix" $SCRIPT_DIR/nix "$@"
+              exec $LIBEXEC/nix-user-chroot "$NIX_STOREROOT/nix" $SCRIPT_DIR/nix --experimental-features 'nix-command flakes' "$@"
             '';
 
             proot-wrapper = makeWrapper "proot-wrapper" ''
-              ROOT="$1"
+                ROOT="$1"
               shift
               exec $SCRIPT_DIR/proot -b "$ROOT":/nix/ "$@"
             '';
@@ -97,7 +100,7 @@
 
             bundler = what:
               pkgs.runCommand "build-bundle" { } ''
-                ${pkgs.haskellPackages.arx}/bin/arx tmpx --tmpdir "${STOREROOT}" ${tarball} // ./bin/${what} '$@' > $out
+                ${pkgs.haskellPackages.arx}/bin/arx tmpx ${tarball} // ./bin/${what} '"$@"' > $out
                 chmod 755 $out
               '';
 
@@ -108,7 +111,7 @@
                 install -Dm 755 ${ssh-wrapper} out/bin/ssh-wrapper
                 install -Dm 755 ${nix-wrapper} out/bin/nix-wrapper
                 ln -s ../../bin/nix out/libexec/nix/build-remote
-                
+
                 ${if useProot then ''
                   install -Dm 755 ${proot} out/libexec/nix/proot
                   install -Dm 755 ${proot-wrapper} out/libexec/nix/nix-user-chroot
@@ -116,12 +119,12 @@
                   install -Dm 755 ${pkgs.pkgsStatic.bubblewrap}/bin/bwrap out/libexec/nix/bwrap
                   install -Dm 755 ${bwrap-wrapper} out/libexec/nix/nix-user-chroot
                 ''}
-                
-                
+
+
                 for cmd in build channel collect-garbage copy-closure daemon env hash instantitate prefetch-url shell store ; do
                   ln -s ./nix out/bin/nix-$cmd
                 done
-                
+
                 tar -Jcvf $out -C ./out .
               '';
 
@@ -140,5 +143,3 @@
           '';
       });
 }
-
-
