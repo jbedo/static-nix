@@ -52,7 +52,7 @@ in slurm jobs.
 The variables `TMPDIR`, `STOREROOT`, and `SLURMPREFIX` must be set
 appropriately in flake.nix.
 
-Resources to request for a derivation can be specified via the `PPN`,
+Resources to request for a derivation is specified via the `PPN`,
 `MEMORY`, and `WALLTIME` attributes, e.g.,:
 
 
@@ -67,15 +67,16 @@ stdenv.mkDerivation {
 
 ## Use with BioNix
 
-BioNix can be used with this experimental SLURM patche by passing the
+BioNix can be used with this experimental SLURM patch by passing the
 resource requirements down through an overlay:
 
 ```
 (_: super: {
-  exec = f: x@{ ppn ? 1, mem ? 1, walltime ? "2:00:00", ... }: y: (f x y).overrideAttrs (attrs: {
-    PPN = if attrs.passthru.multicore or false then ppn else 1;
-    MEMORY = toString mem + "G";
-    WALLTIME = walltime;
-  });
+  exec = f: x@{ ppn ? 1, mem ? 1, walltime ? "2:00:00", ... }: y:
+    (f (removeAttrs x [ "ppn" "mem" "walltime" ]) y).overrideAttrs (attrs: {
+      PPN = if attrs.passthru.multicore or false then ppn else 1;
+      MEMORY = toString mem + "G";
+      WALLTIME = walltime;
+    });
 })
 ```
