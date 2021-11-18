@@ -2,7 +2,11 @@
   inputs.nix.url = "github:nixos/nix";
   inputs.nixpkgs.url = "nixpkgs/nixos-21.05-small";
   inputs.flake-utils.url = "github:numtide/flake-utils";
-  outputs = { self, nix, nixpkgs, flake-utils, ... }:
+  inputs.arxsrc = {
+    url = "github:solidsnack/arx";
+    flake = false;
+  };
+  outputs = { self, nix, nixpkgs, flake-utils, arxsrc, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
@@ -19,7 +23,7 @@
 
             # Location of nix store
             # Must be shared with build nodes
-            STOREROOT = "/vast/scratch/users/$USER/slurm-test";
+            STOREROOT = "/stornext/HPCScratch/$USER";
 
             # Location of temporary files (e.g., build directories)
             # Must be shared with build nodes
@@ -61,9 +65,10 @@
 
             arx' = pkgs.haskellPackages.arx.overrideAttrs
               (_: {
+                version = "git";
+                src = arxsrc;
                 preConfigure = ''
-                  substituteInPlace model-scripts/tmpx.sh \
-                    --replace 'cmd go "$@"' 'go "$@"'
+                  echo "git" > version
                 '';
               });
 
@@ -72,7 +77,9 @@
             '';
 
             nix-wrapper = makeWrapper "nix-wrapper" ''
-              exec $LIBEXEC/nix-user-chroot "$NIX_STOREROOT/nix" $SCRIPT_DIR/nix --experimental-features 'nix-command flakes' "$@"
+              exec $LIBEXEC/nix-user-chroot "$NIX_STOREROOT/nix" $SCRIPT_DIR/nix \
+                --experimental-features 'nix-command flakes' \
+                --option sandbox false "$@"
             '';
 
             proot-wrapper = makeWrapper "proot-wrapper" ''
@@ -100,7 +107,7 @@
 
             bundler = what:
               pkgs.runCommand "build-bundle" { } ''
-                ${pkgs.haskellPackages.arx}/bin/arx tmpx ${tarball} // ./bin/${what} '"$@"' > $out
+                ${arx'}/bin/arx tmpx --tmpdir '${TMPDIR}' ${tarball} // ./bin/${what} '"$@"' > $out
                 chmod 755 $out
               '';
 

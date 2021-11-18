@@ -1,5 +1,21 @@
 {
   "nodes": {
+    "arxsrc": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1533420446,
+        "narHash": "sha256-Ki+4do5BzdvkCMRgBgnxhGWD6xIMiqUVPIrETfi2BMI=",
+        "owner": "solidsnack",
+        "repo": "arx",
+        "rev": "7561fed76bb613302d1ae104f0eb2ad13daa9fac",
+        "type": "github"
+      },
+      "original": {
+        "owner": "solidsnack",
+        "repo": "arx",
+        "type": "github"
+      }
+    },
     "flake-utils": {
       "locked": {
         "lastModified": 1634851050,
@@ -82,6 +98,7 @@
     },
     "root": {
       "inputs": {
+        "arxsrc": "arxsrc",
         "flake-utils": "flake-utils",
         "nix": "nix",
         "nixpkgs": "nixpkgs_2"
