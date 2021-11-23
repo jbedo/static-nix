@@ -35,7 +35,7 @@
             SRUN = "${SLURMPREFIX}/srun";
             SALLOC = "${SLURMPREFIX}/salloc";
 
-            makeWrapper = name: script: pkgs.writeScript name ''
+            makeWrapper = name: minimal: script: pkgs.writeScript name ''
               #!/bin/sh
               set -e
               set -o pipefail
@@ -47,14 +47,16 @@
               }
               dirof "$0"
               SCRIPT_DIR="$( cd -- "$DIR" &> /dev/null && pwd -P)"
-              dirof "$SCRIPT_DIR"
-              LIBEXEC="''${DIR}libexec/nix"
-              export TMPDIR="${TMPDIR}"
-              export NIX_STOREROOT="${STOREROOT}"
-              export NIX_SRUN="${SRUN}"
-              export NIX_SALLOC="${SALLOC}"
-              command -v mkdir &> /dev/null && mkdir -p "$TMPDIR"
-              command -v mkdir &> /dev/null && mkdir -p "$NIX_STOREROOT"/nix
+              ${pkgs.lib.optionalString (!minimal) ''
+                dirof "$SCRIPT_DIR"
+                LIBEXEC="''${DIR}libexec/nix"
+                export TMPDIR="${TMPDIR}"
+                export NIX_STOREROOT="${STOREROOT}"
+                export NIX_SRUN="${SRUN}"
+                export NIX_SALLOC="${SALLOC}"
+                command -v mkdir &> /dev/null && mkdir -p "$TMPDIR"
+                command -v mkdir &> /dev/null && mkdir -p "$NIX_STOREROOT"/nix
+              ''}
 
               ${script}
             '';
@@ -73,22 +75,23 @@
               });
 
             ssh-wrapper = makeWrapper "ssh-wrapper" ''
+            ssh-wrapper = makeWrapper "ssh-wrapper" false ''
               exec $LIBEXEC/nix-user-chroot "$NIX_STOREROOT/nix" $LIBEXEC/bash - c 'exec ./bin/$SSH_ORIGINAL_COMMAND'
             '';
 
-            nix-wrapper = makeWrapper "nix-wrapper" ''
+            nix-wrapper = makeWrapper "nix-wrapper" false ''
               exec $LIBEXEC/nix-user-chroot "$NIX_STOREROOT/nix" $SCRIPT_DIR/nix \
                 --experimental-features 'nix-command flakes' \
                 --option sandbox false "$@"
             '';
 
-            proot-wrapper = makeWrapper "proot-wrapper" ''
-                ROOT="$1"
+            proot-wrapper = makeWrapper "proot-wrapper" true ''
+              ROOT="$1"
               shift
               exec $SCRIPT_DIR/proot -b "$ROOT":/nix/ "$@"
             '';
 
-            bwrap-wrapper = makeWrapper "bwrap-wrapper" ''
+            bwrap-wrapper = makeWrapper "bwrap-wrapper" true ''
               ROOT="$1"
               shift
               rootArgs=""
