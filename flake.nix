@@ -74,7 +74,10 @@
                 '';
               });
 
-            ssh-wrapper = makeWrapper "ssh-wrapper" ''
+            chroot-wrapper = makeWrapper "chroot-wrapper" false ''
+              exec $LIBEXEC/nix-user-chroot "$NIX_STOREROOT/nix" "$@"
+            '';
+
             ssh-wrapper = makeWrapper "ssh-wrapper" false ''
               exec $LIBEXEC/nix-user-chroot "$NIX_STOREROOT/nix" $LIBEXEC/bash - c 'exec ./bin/$SSH_ORIGINAL_COMMAND'
             '';
@@ -120,6 +123,7 @@
                 install -Dm 755 ${pkgs.pkgsStatic.bash}/bin/bash out/libexec/nix/bash
                 install -Dm 755 ${ssh-wrapper} out/bin/ssh-wrapper
                 install -Dm 755 ${nix-wrapper} out/bin/nix-wrapper
+                install -Dm 755 ${chroot-wrapper} out/bin/chroot-wrapper
                 ln -s ../../bin/nix out/libexec/nix/build-remote
 
                 ${if useProot then ''
