@@ -72,6 +72,7 @@
                 preConfigure = ''
                   echo "git" > version
                 '';
+                patches = [ ./arx-cwd.patch ];
               });
 
             chroot-wrapper = makeWrapper "chroot-wrapper" false ''
@@ -113,7 +114,7 @@
 
             bundler = what:
               pkgs.runCommand "build-bundle" { } ''
-                ${arx'}/bin/arx tmpx --tmpdir '${TMPDIR}' ${tarball} // ./bin/${what} '"$@"' > $out
+                ${arx'}/bin/arx tmpx --tmpdir '${TMPDIR}' ${tarball} // ${what} '"$@"' > $out
                 chmod 755 $out
               '';
 

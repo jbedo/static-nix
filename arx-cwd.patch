@@ -1,0 +1,21 @@
+diff --git a/model-scripts/tmpx.sh b/model-scripts/tmpx.sh
+index 9c2ec6f..fb7b8f2 100755
+--- a/model-scripts/tmpx.sh
++++ b/model-scripts/tmpx.sh
+@@ -53,6 +53,7 @@ opts() {
+       trap 'exit 2' HUP INT QUIT BUS SEGV PIPE TERM
+     fi
+     mkdir -p "$dir"
++    origin="$(pwd)"
+     cd "$dir"
+   fi
+   # Call the command with the reassembled ARGV, options removed.
+@@ -72,7 +73,7 @@ go () {
+   fi
+   if $run
+   then
+-    ( . ../env && exec ../run "$@" )
++    ( . ../env && cd $origin && exec $dir/dat/$(cat run) "$@" )
+   fi
+ }
+ unpack_env () { : # NOOP
