@@ -15,7 +15,7 @@ index 9c2ec6f..fb7b8f2 100755
    if $run
    then
 -    ( . ../env && exec ../run "$@" )
-+    ( . ../env && cd $origin && exec $dir/dat/$(cat run) "$@" )
++    ( . ../env && cd $origin && exec $dir/dat/bin/$(cat $dir/run) "$@" )
    fi
  }
  unpack_env () { : # NOOP

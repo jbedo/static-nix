@@ -80,7 +80,7 @@
             '';
 
             ssh-wrapper = makeWrapper "ssh-wrapper" false ''
-              exec $LIBEXEC/nix-user-chroot "$NIX_STOREROOT/nix" $LIBEXEC/bash - c 'exec ./bin/$SSH_ORIGINAL_COMMAND'
+              exec $LIBEXEC/nix-user-chroot "$NIX_STOREROOT/nix" $LIBEXEC/bash -c 'exec '"$SCRIPT_DIR"'/$SSH_ORIGINAL_COMMAND'
             '';
 
             nix-wrapper = makeWrapper "nix-wrapper" false ''
@@ -114,7 +114,7 @@
 
             bundler = what:
               pkgs.runCommand "build-bundle" { } ''
-                ${arx'}/bin/arx tmpx --tmpdir '${TMPDIR}' ${tarball} // ${what} '"$@"' > $out
+                ${arx'}/bin/arx tmpx --tmpdir '${TMPDIR}' ${tarball} // ${what} > $out
                 chmod 755 $out
               '';
 
