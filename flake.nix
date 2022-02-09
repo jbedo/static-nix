@@ -136,7 +136,7 @@
                 ''}
 
 
-                for cmd in build channel collect-garbage copy-closure daemon env hash instantitate prefetch-url shell store ; do
+                for cmd in build channel collect-garbage copy-closure daemon env hash instantiate prefetch-url shell store ; do
                   ln -s ./nix out/bin/nix-$cmd
                 done
 
