@@ -19,7 +19,7 @@
         packages =
           let
             # Location of srun & sallocate binaries on the HPC system
-            SLURMPREFIX = "/usr/bin/";
+            SLURMPREFIX = "/usr/local/slurm/current/bin";
 
             # Location of nix store
             # Must be shared with build nodes
