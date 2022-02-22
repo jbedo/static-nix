@@ -23,7 +23,7 @@
 
             # Location of nix store
             # Must be shared with build nodes
-            STOREROOT = "/stornext/HPCScratch/$USER";
+            STOREROOT = "/vast/scratch/users/$USER";
 
             # Location of temporary files (e.g., build directories)
             # Must be shared with build nodes
