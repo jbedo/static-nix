@@ -3,9 +3,9 @@ index 2182f0bb4..f4342011f 100644
 --- a/src/libstore/build/local-derivation-goal.cc
 +++ b/src/libstore/build/local-derivation-goal.cc
 @@ -59,6 +59,14 @@
- 
+
  namespace nix {
- 
+
 +#undef NIX_PREFIX
 +#undef NIX_LIBEXEC_DIR
 +static const std::string SELF{canonPath(readLink("/proc/self/exe"))};
@@ -28,11 +28,11 @@ index 2182f0bb4..f4342011f 100644
 +            pid.setKillSignal(SIGTERM);
              pid.kill();
 +        }
- 
+
          assert(pid == -1);
      }
 @@ -377,7 +389,7 @@ void LocalDerivationGoal::startBuilder()
- 
+
      /* Are we doing a chroot build? */
      {
 -        auto noChroot = parsedDrv->getBoolAttr("__noChroot");
@@ -40,8 +40,8 @@ index 2182f0bb4..f4342011f 100644
          if (settings.sandboxMode == smEnabled) {
              if (noChroot)
                  throw Error("derivation '%s' has '__noChroot' set, "
-@@ -2022,7 +2034,36 @@ void LocalDerivationGoal::runChild()
- 
+@@ -2022,5 +2034,35 @@ void LocalDerivationGoal::runChild()
+
          posix_spawn(NULL, builder.c_str(), NULL, &attrp, stringsToCharPtrs(args).data(), stringsToCharPtrs(envStrs).data());
  #else
 -        execve(builder.c_str(), stringsToCharPtrs(args).data(), stringsToCharPtrs(envStrs).data());
@@ -75,6 +75,7 @@ index 2182f0bb4..f4342011f 100644
 +        args.push_front("--begin=now+10second");
 +        args.push_front("salloc");
 +        execve(canonPath(std::getenv("NIX_SALLOC")).c_str(), stringsToCharPtrs(args).data(), stringsToCharPtrs(envStrs).data());
++        usleep(1000);
  #endif
- 
+
          throw SysError("executing '%1%'", drv->builder);

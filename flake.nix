@@ -89,6 +89,11 @@
                 --option sandbox false "$@"
             '';
 
+            nix-store-wrapper = makeWrapper "nix-store-wrapper" false ''
+              exec $LIBEXEC/nix-user-chroot "$NIX_STOREROOT/nix" $SCRIPT_DIR/nix-store \
+                "$@"
+            '';
+
             proot-wrapper = makeWrapper "proot-wrapper" true ''
               ROOT="$1"
               shift
@@ -124,6 +129,7 @@
                 install -Dm 755 ${pkgs.pkgsStatic.bash}/bin/bash out/libexec/nix/bash
                 install -Dm 755 ${ssh-wrapper} out/bin/ssh-wrapper
                 install -Dm 755 ${nix-wrapper} out/bin/nix-wrapper
+                install -Dm 755 ${nix-store-wrapper} out/bin/nix-store-wrapper
                 install -Dm 755 ${chroot-wrapper} out/bin/chroot-wrapper
                 ln -s ../../bin/nix out/libexec/nix/build-remote
 
@@ -148,6 +154,7 @@
             slurm = tarball;
             slurm-ssh-wrapper-bundle = bundler "ssh-wrapper";
             slurm-nix-wrapper-bundle = bundler "nix-wrapper";
+            slurm-nix-store-wrapper-bundle = bundler "nix-store-wrapper";
           };
 
         defaultPackage =
