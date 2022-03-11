@@ -58,6 +58,16 @@
                 command -v mkdir &> /dev/null && mkdir -p "$NIX_STOREROOT"/nix
               ''}
 
+              # NSS wrapper remapping
+              if [ ! -z ''${USER+x} ] ; then
+                if [ ! -e ${TMPDIR}/passwd ] || [ ! -e ${TMPDIR}/group ] ; then
+                  cat /etc/passwd > ${TMPDIR}/passwd
+                  echo "$(id -un)::$(id -u):$(id -g)::$HOME:" >> ${TMPDIR}/passwd
+                  cat /etc/group > ${TMPDIR}/group
+                  echo "$(id -gn)::$(id -g):"  >> ${TMPDIR}/group
+                fi
+              fi
+
               ${script}
             '';
 
@@ -109,6 +119,9 @@
                   rootArgs="$rootArgs --bind $path $path"
                 fi
               done
+              if [ ! -z ''${USER+x} ] ; then
+                rootArgs="$rootArgs --bind ${TMPDIR}/passwd /etc/passwd --bind ${TMPDIR}/group /etc/group"
+              fi
               exec $SCRIPT_DIR/bwrap --bind "$ROOT" /nix/ $rootArgs --dev-bind /dev /dev "$@"
             '';
 
