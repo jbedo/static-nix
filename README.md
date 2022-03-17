@@ -3,16 +3,13 @@ ease the installation and usage of Nix on typical HPC clusters. There
 are patches for:
 
 
-1. Disable sqlite WAL: on networked systems with shared storage WAL does not
-   work; disabling is an attempt to reduce possible corruption from invoking Nix
-   on multiple nodes simultaniously. This does reduce concurrency.
-2. Disable fallocate and luster xattr removal: Luster filesystems do not support
+1. Disable fallocate and luster xattr removal: Luster filesystems do not support
    fallocate and have unremovable extended attributes.
-3. Expand CA certificate search path: CentOS among others store the CA bundle
+2. Expand CA certificate search path: CentOS among others store the CA bundle
    at a different location to the default fallback paths.
-4. Make final binary relocatable: paths are searched relative to the Nix binary
+3. Make final binary relocatable: paths are searched relative to the Nix binary
    allowing the executable to be relocated anywhere.
-5. Handle large file hash rewriting on disk rather than memory to allow large 
+4. Handle large file hash rewriting on disk rather than memory to allow large
    store objects. This currently relies on mmap and so only works on platforms
    supporting it.
 
@@ -24,7 +21,7 @@ With Flakes enabled:
 nix build github:jbedo/static-nix
 ```
 
-By default patches 3, 4, and 5 are enabled.
+By default patches 2, 3, and 4 are enabled.
 
 # Experimental SLURM submissions
 
