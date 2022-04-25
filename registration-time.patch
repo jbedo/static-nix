@@ -1,0 +1,13 @@
+diff --git a/src/libstore/local-store.cc b/src/libstore/local-store.cc
+index 284e385e6..7fa2581c7 100644
+--- a/src/libstore/local-store.cc
++++ b/src/libstore/local-store.cc
+@@ -809,7 +809,7 @@ uint64_t LocalStore::addValidPath(State & state,
+     state.stmts->RegisterValidPath.use()
+         (printStorePath(info.path))
+         (info.narHash.to_string(Base16, true))
+-        (info.registrationTime == 0 ? time(0) : info.registrationTime)
++        (time(0))
+         (info.deriver ? printStorePath(*info.deriver) : "", (bool) info.deriver)
+         (info.narSize, info.narSize != 0)
+         (info.ultimate ? 1 : 0, info.ultimate)
