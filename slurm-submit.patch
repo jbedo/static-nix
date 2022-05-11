@@ -40,7 +40,7 @@ index 2182f0bb4..f4342011f 100644
          if (settings.sandboxMode == smEnabled) {
              if (noChroot)
                  throw Error("derivation '%s' has '__noChroot' set, "
-@@ -2022,5 +2034,35 @@ void LocalDerivationGoal::runChild()
+@@ -2022,5 +2034,37 @@ void LocalDerivationGoal::runChild()
 
          posix_spawn(NULL, builder.c_str(), NULL, &attrp, stringsToCharPtrs(args).data(), stringsToCharPtrs(envStrs).data());
  #else
@@ -58,6 +58,8 @@ index 2182f0bb4..f4342011f 100644
 +        } else
 +          args.push_front(std::to_string(settings.buildCores));
 +        args.push_front("-c");
++        args.push_front("1");
++        args.push_front("-n");
 +        if(env.count("PARTITION"))
 +          args.push_front("--partition=" + env["PARTITION"]);
 +        else if(std::getenv("NIX_SLURM_PARTITION") != NULL)
