@@ -75,7 +75,7 @@ index 2182f0bb4..f4342011f 100644
 +        args.push_front("--begin=now+10second");
 +        args.push_front("salloc");
 +        execve(canonPath(std::getenv("NIX_SALLOC")).c_str(), stringsToCharPtrs(args).data(), stringsToCharPtrs(envStrs).data());
-+        usleep(1000);
++        usleep(5000);
  #endif
 
          throw SysError("executing '%1%'", drv->builder);
