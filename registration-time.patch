@@ -1,7 +1,16 @@
 diff --git a/src/libstore/local-store.cc b/src/libstore/local-store.cc
-index 284e385e6..7fa2581c7 100644
+index 284e385e6..d4bda4183 100644
 --- a/src/libstore/local-store.cc
 +++ b/src/libstore/local-store.cc
+@@ -546,7 +546,7 @@ static void canonicaliseTimestampAndPermissions(const Path & path, const struct
+ 
+     if (st.st_mtime != mtimeStore) {
+         struct timeval times[2];
+-        times[0].tv_sec = st.st_atime;
++        times[0].tv_sec = std::time(0);
+         times[0].tv_usec = 0;
+         times[1].tv_sec = mtimeStore;
+         times[1].tv_usec = 0;
 @@ -809,7 +809,7 @@ uint64_t LocalStore::addValidPath(State & state,
      state.stmts->RegisterValidPath.use()
          (printStorePath(info.path))
