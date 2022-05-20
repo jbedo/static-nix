@@ -7,7 +7,6 @@ import qualified Data.Text.IO                  as T
 import           Data.Time.Clock.POSIX          ( getPOSIXTime )
 import           Database.SQLite.Simple  hiding ( close )
 import           System.Environment             ( getArgs )
-import           System.FilePath
 
 storeRoot = "/vast/scratch/users/bedo.j"
 
@@ -39,7 +38,7 @@ getId conn path = head <$> queryNamed
   "select id from ValidPaths where path = :path"
   [":path" := path]
 
-main = withConnection (storeRoot </> "/nix/var/nix/db/db.sqlite") $ \conn -> do
+main = withConnection (storeRoot <> "/nix/var/nix/db/db.sqlite") $ \conn -> do
   args <- getArgs
   execute_ conn "pragma foreign_keys = off"
 
