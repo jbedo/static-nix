@@ -40,7 +40,7 @@ index 2182f0bb4..f4342011f 100644
          if (settings.sandboxMode == smEnabled) {
              if (noChroot)
                  throw Error("derivation '%s' has '__noChroot' set, "
-@@ -2022,5 +2034,37 @@ void LocalDerivationGoal::runChild()
+@@ -2022,5 +2034,38 @@ void LocalDerivationGoal::runChild()
 
          posix_spawn(NULL, builder.c_str(), NULL, &attrp, stringsToCharPtrs(args).data(), stringsToCharPtrs(envStrs).data());
  #else
@@ -60,6 +60,7 @@ index 2182f0bb4..f4342011f 100644
 +        args.push_front("-c");
 +        args.push_front("1");
 +        args.push_front("-n");
++        args.push_front("--qos=bonus");
 +        if(env.count("PARTITION"))
 +          args.push_front("--partition=" + env["PARTITION"]);
 +        else if(std::getenv("NIX_SLURM_PARTITION") != NULL)
@@ -77,7 +78,7 @@ index 2182f0bb4..f4342011f 100644
 +        args.push_front("--begin=now+10second");
 +        args.push_front("salloc");
 +        execve(canonPath(std::getenv("NIX_SALLOC")).c_str(), stringsToCharPtrs(args).data(), stringsToCharPtrs(envStrs).data());
-+        usleep(9999);
++        usleep(9999999);
  #endif
 
          throw SysError("executing '%1%'", drv->builder);

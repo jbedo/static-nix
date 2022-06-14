@@ -32,8 +32,8 @@ closure conn ids = do
               S.empty
               collect
 
-getId :: Connection -> FilePath -> IO ID
-getId conn path = head <$> queryNamed
+getId :: Connection -> FilePath -> IO [ID]
+getId conn path = queryNamed
   conn
   "select id from ValidPaths where path = :path"
   [":path" := path]
@@ -43,11 +43,11 @@ main = withConnection (storeRoot <> "/nix/var/nix/db/db.sqlite") $ \conn -> do
   execute_ conn "pragma foreign_keys = off"
 
   ps <- if length args > 0
-    then S.fromList <$> mapM (getId conn) args
+    then S.fromList . concat <$> mapM (getId conn) args
     else do
       mark <- round <$> getPOSIXTime
       fold conn
-           "select id from ValidPaths where registrationTime < ?"
+           "select id from ValidPaths where registrationTime < ? and path not like '%.drv'"
            (Only (mark - 60 * 60 * 24 * 13 :: Int))
            S.empty
            collect
@@ -60,5 +60,3 @@ main = withConnection (storeRoot <> "/nix/var/nix/db/db.sqlite") $ \conn -> do
     executeMany conn "delete from ValidPaths where id = ?" $ S.toList ps'
     executeMany conn "delete from Refs where referrer = ?" $ S.toList ps'
     executeMany conn "delete from Refs where reference = ?" $ S.toList ps'
-    executeMany conn "delete from DerivationOutputs where drv = ?"
-      $ S.toList ps'
